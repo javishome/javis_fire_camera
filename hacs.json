@@ -1,0 +1,9 @@
+{
+    "name": "Javis Fire Camera",
+    "content_in_root": false,
+    "zip_release": true,
+    "homeassistant": "2024.4.4",
+    "filename": "fire_camera.zip",
+    "hide_default_branch": true,
+    "hacs": "1.35.0"
+}
