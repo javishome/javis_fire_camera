@@ -1,6 +1,6 @@
 import os
 
-files_pyc = ["__init__.py", "const.py", "api.py", "websocket_client.py", "binary_sensor.py"]
+files_pyc = ["api.py", "websocket_client.py"]
 
 # Biên dịch file .py thành .pyc và xóa file gốc
 for file in files_pyc:
