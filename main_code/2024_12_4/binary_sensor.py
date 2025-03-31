@@ -1,12 +1,11 @@
 import logging
 import asyncio
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from .websocket_client import WebSocketClient
-import aiohttp
 from homeassistant.components.persistent_notification import async_create
 from homeassistant.exceptions import ConfigEntryNotReady
-_LOGGER = logging.getLogger(__name__)
+from .websocket_client import WebSocketClient
 
+_LOGGER = logging.getLogger(__name__)
 DOMAIN = "fire_camera"
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -22,6 +21,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
     # Khởi tạo WebSocketClient duy nhất
     ws_client = WebSocketClient(hass, user_name, password, camera_ip)
     
+    # Lưu ws_client vào hass.data để dọn dẹp sau này
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = ws_client
+    
     # Tạo các cảm biến và đăng ký callback
     fire_sensor = FireSmokeSensor(hass, camera_name, ws_client, mac_address, "fire")
     smoke_sensor = FireSmokeSensor(hass, camera_name, ws_client, mac_address, "smoke")
@@ -33,10 +35,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ws_client.add_callback(fire_sensor.receive_ws_data)
     ws_client.add_callback(smoke_sensor.receive_ws_data)
     
-    # Kết nối WebSocket
-    await ws_client.connect()
-
-
+    # Chạy kết nối WebSocket trong một tác vụ bất đồng bộ
+    hass.loop.create_task(ws_client.connect())
 
 class FireSmokeSensor(BinarySensorEntity):
     """Cảm biến nhị phân để nhận dữ liệu từ WebSocket."""
@@ -56,7 +56,7 @@ class FireSmokeSensor(BinarySensorEntity):
             self._attr_device_class = "heat"
         else:
             self._attr_device_class = event_type
-        self.ws_client = ws_client  # Sử dụng WebSocketClient đã khởi tạo
+        self.ws_client = ws_client
         self._timeout_task = None
 
     async def receive_ws_data(self, message):
@@ -74,9 +74,20 @@ class FireSmokeSensor(BinarySensorEntity):
         self._timeout_task = self.hass.loop.create_task(self.turn_off_after_delay())
 
     async def turn_off_after_delay(self):
-        await asyncio.sleep(30)
-        self._attr_is_on = False
-        self.async_write_ha_state()
+        """Tắt cảm biến sau 30 giây."""
+        try:
+            await asyncio.sleep(30)
+            self._attr_is_on = False
+            self.async_write_ha_state()
+        except asyncio.CancelledError:
+            _LOGGER.debug(f"Timer for {self._attr_name} was cancelled")
+
+    async def async_will_remove_from_hass(self):
+        """Dọn dẹp khi cảm biến bị xóa khỏi HA."""
+        if self._timeout_task:
+            self._timeout_task.cancel()
+        self.ws_client.stop()
+        await super().async_will_remove_from_hass()
 
     def stop_ws(self):
         """Dừng kết nối WebSocket khi HA tắt."""
