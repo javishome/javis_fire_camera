@@ -34,7 +34,7 @@ class WebSocketConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 else:
                     errors["base"] = "cannot_get_mac"
             else:
-                errors["base"] = errors.get("error")
+                errors["base"] = token.get("error")
                 
                 
 
