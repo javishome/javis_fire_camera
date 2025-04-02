@@ -34,7 +34,7 @@ class WebSocketClient:
 
         while self.running:
             try:
-                async with self.session.ws_connect(self.ws_url, timeout=10) as websocket:
+                async with self.session.ws_connect(self.ws_url, timeout=2) as websocket:
                     self.websocket = websocket
                     _LOGGER.info(f"✅ Connected to WebSocket: {self.ws_url}")
                     await self.send_message({"cmd": "recvpic", "streamindex": 0})
