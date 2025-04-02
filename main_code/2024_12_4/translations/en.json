@@ -7,7 +7,7 @@
       "login_failed": "Thông tin user hoặc password không hợp lệ. Vui lòng kiểm tra lại.",
       "cannot_get_mac": "Không thể lấy địa chỉ MAC của máy chủ. Vui lòng kiểm tra kết nối mạng của bạn hoặc cấu hình máy chủ.",
       "no_token": "Không thể lấy token từ máy chủ. Vui lòng kiểm tra kết nối mạng của bạn hoặc cấu hình máy chủ.",
-      "url_error": "URL không hợp lệ. Vui lòng kiểm tra lại.",
+      "url_error": "URL không hợp lệ. Vui lòng kiểm tra lại."
     },
     "step": {
       "user": {

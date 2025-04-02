@@ -28,7 +28,6 @@ class WebSocketConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             token = await get_token(user_input[CONF_USERNAME], user_input[CONF_PASSWORD], camera_ip)
             if token.get("token"):
                 token = token["token"]
-                errors["base"] = "invalid_credentials"
                 mac_adress = await async_get_mac_address(camera_ip, token)
                 if mac_adress:
                     user_input["mac_address"] = mac_adress
