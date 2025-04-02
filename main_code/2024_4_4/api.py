@@ -53,14 +53,17 @@ async def get_token(user: str, password: str, camera_ip: str) -> str:
                     if check == 1:
                         if token:
                             _LOGGER.info("Đăng nhập thành công!")
-                            return token
+                            return {"token": token}
                         else:
                             _LOGGER.info("Không nhận được token từ API.")
+                            return {"error": "no_token"}
                     else:
                         _LOGGER.info(f"Đăng nhập thất bại! kiểm tra lại tài khoản hoặc mật khẩu.")
+                        return {"error": "login_failed"}
                 else:
                     _LOGGER.info(f"Đăng nhập thất bại! Mã lỗi: {response.status}")
         except aiohttp.ClientError as e:
             _LOGGER.info(f"Lỗi kết nối đến API: {e}")
+            return {"error": "url_error"}
 
-    return None
+    return {"error": "unknown"}

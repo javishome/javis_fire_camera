@@ -4,6 +4,6 @@
   "version": "1.0",
   "dependencies": [],
   "codeowners": ["@javisco"],
-  "requirements": ["websockets", "aiofiles>=23.2.1"],
+  "requirements": [ "aiofiles"],
   "config_flow": true
 }
