@@ -1,7 +1,7 @@
 {
   "domain": "fire_camera",
   "name": "Fire Camera",
-  "version": "1.6",
+  "version": "1.7",
   "dependencies": [],
   "codeowners": ["@javisco"],
   "requirements": ["aiofiles"],

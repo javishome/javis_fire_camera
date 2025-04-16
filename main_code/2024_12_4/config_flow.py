@@ -6,10 +6,7 @@ import homeassistant.helpers.config_validation as cv  # Import thêm để dùng
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 import asyncio
 import aiohttp
-import logging
-from .api import get_token, async_get_mac_address
-
-_LOGGER = logging.getLogger(__name__)
+from .api import get_token_1, get_mac_address_1, get_token_2, get_mac_address_2, log
 
 DOMAIN = "fire_camera"
 
@@ -23,38 +20,63 @@ class WebSocketConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
+            # camera type 1
             camera_ip = user_input["camera_ip"]
-            ws_url = f"ws://{camera_ip}:8088/"
-            token = await get_token(user_input[CONF_USERNAME], user_input[CONF_PASSWORD], camera_ip)
-            if token.get("token"):
-                token = token["token"]
-                mac_adress = await async_get_mac_address(camera_ip, token)
-                if mac_adress:
-                    user_input["mac_address"] = mac_adress
+            if user_input["camera_type"] == "1":
+                ws_url = f"ws://{camera_ip}:8088/"
+                token = await get_token_1(user_input[CONF_USERNAME], user_input[CONF_PASSWORD], camera_ip)
+                if token.get("token"):
+                    token = token["token"]
+                    mac_adress = await get_mac_address_1(camera_ip, token)
+                    if mac_adress:
+                        user_input["mac_address"] = mac_adress
+                        user_input["token"] = token
+                    else:
+                        errors["base"] = "cannot_get_mac"
                 else:
-                    errors["base"] = "cannot_get_mac"
-            else:
-                errors["base"] = token.get("error")
-                
-                
+                    errors["base"] = token.get("error")
+            if user_input["camera_type"] == "2":
+                token = await get_token_2(user_input[CONF_USERNAME], user_input[CONF_PASSWORD], camera_ip)
+                if token.get("token"):
+                    token = token["token"]
+                    mac_adress = await get_mac_address_2(camera_ip, token)
+                    if mac_adress:
+                        user_input["mac_address"] = mac_adress
+                        user_input["token"] = token
+                    else:
+                        errors["base"] = "cannot_get_mac"
+                else:
+                    errors["base"] = token.get("error")
 
+            if not errors:
+                # Kiểm tra trùng tên hoặc MAC address
+                for entry in self._async_current_entries():
+                    log(f"Checking entry: {entry.data}")
+                    if entry.data.get("camera_name") == user_input["camera_name"]:
+                        errors["base"] = "name_exists"
+                        break
+                    if entry.data.get("mac_address") == user_input["mac_address"]:
+                        errors["base"] = "mac_exists"
+                        break
+                
             if not errors:
                 self.data = user_input
                 try:
-                    async with aiohttp.ClientSession() as session:
-                        async with session.ws_connect(ws_url, timeout=5) as ws:
-                            await ws.close()    
+                    if user_input["camera_type"] == "1":
+                        async with aiohttp.ClientSession() as session:
+                            async with session.ws_connect(ws_url, timeout=5) as ws:
+                                await ws.close()    
                     return self.async_create_entry(title=user_input["camera_name"], data=self.data)
                 except aiohttp.ClientError as err:
                     errors["base"] = "cannot_connect"
-                    _LOGGER.error(f"⚠️ Error: {err}")
+                    log(f"⚠️ Error: {err}", type="error")
                     # self.hass.data.setdefault(DOMAIN, {})["last_error"] = str(err)
                 except asyncio.TimeoutError:
                     errors["base"] = "timeout"
-                    _LOGGER.error("⚠️ Timeout error: Cannot connect to WebSocket")
+                    log("⚠️ Timeout error: Cannot connect to WebSocket", type="error")
                 except Exception as err:
                     errors["base"] = "unknown"
-                    _LOGGER.error(f"⚠️ Error: {err}")
+                    log(f"⚠️ Error: {err}", type="error")
                     
                     self.hass.data.setdefault(DOMAIN, {})["last_error"] = str(err)
             
@@ -64,6 +86,7 @@ class WebSocketConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_USERNAME): str,
             vol.Required(CONF_PASSWORD): str,  # 🔒 Ẩn mật khẩu
             vol.Required("camera_ip"): str,
+            vol.Required("camera_type"): vol.In(["1", "2"]),
         })
 
         return self.async_show_form(step_id="user", data_schema=data_schema, errors=errors)

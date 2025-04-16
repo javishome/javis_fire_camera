@@ -5,8 +5,7 @@ import numpy as np
 import json
 from datetime import datetime
 import aiofiles
-
-_LOGGER = logging.getLogger(__name__)
+from .api import log
 
 class WebSocketClient:
     def __init__(self, hass, user_name, password, camera_ip):
@@ -30,13 +29,13 @@ class WebSocketClient:
         """Kết nối WebSocket và lắng nghe tin nhắn."""
         self.running = True
         self.session = aiohttp.ClientSession()
-        _LOGGER.info(f"Starting WebSocket client for {self.ws_url}")
+        log(f"Starting WebSocket client for {self.ws_url}")
 
         while self.running:
             try:
                 async with self.session.ws_connect(self.ws_url, timeout=2) as websocket:
                     self.websocket = websocket
-                    _LOGGER.info(f"✅ Connected to WebSocket: {self.ws_url}")
+                    log(f"✅ Connected to WebSocket: {self.ws_url}")
                     await self.send_message({"cmd": "recvpic", "streamindex": 0})
 
                     while self.running:
@@ -46,28 +45,28 @@ class WebSocketClient:
                             if msg.type == aiohttp.WSMsgType.BINARY:
                                 await self.process_message(msg.data)
                             elif msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR):
-                                _LOGGER.warning("WebSocket connection closed or error occurred")
+                                log("WebSocket connection closed or error occurred")
                                 break
                         except asyncio.TimeoutError:
-                            _LOGGER.debug("No message received within 30 seconds, continuing...")
+                            log("No message received within 30 seconds, continuing...", type="warning")
                             continue
                         except Exception as e:
-                            _LOGGER.error(f"Error receiving WebSocket message: {e}")
+                            log(f"Error receiving WebSocket message: {e}", type="error")
                             break
 
             except aiohttp.ClientError as e:
-                _LOGGER.error(f"⚠️ WebSocket connection error: {e}, retrying in 5s...")
+                log(f"⚠️ WebSocket connection error: {e}, retrying in 5s...", type="warning")
                 await asyncio.sleep(5)
             except asyncio.CancelledError:
-                _LOGGER.info("WebSocket connection cancelled, stopping...")
+                log("WebSocket connection cancelled, stopping...", type="error")
                 self.running = False
                 break
             except Exception as e:
-                _LOGGER.error(f"⚠️ Unexpected WebSocket error: {e}, retrying in 5s...")
+                log(f"⚠️ Unexpected WebSocket error: {e}, retrying in 5s...", type="error")
                 await asyncio.sleep(5)
 
         # Dọn dẹp khi dừng
-        _LOGGER.info("self.running: %s", self.running)
+        log("self.running: %s", self.running)
         await self.stop(shutdown=True)
 
     async def send_message(self, message):
@@ -75,9 +74,9 @@ class WebSocketClient:
         if self.websocket and not self.websocket.closed:
             try:
                 await self.websocket.send_json(message)
-                _LOGGER.info(f"📤 Sent: {json.dumps(message)}")
+                log(f"📤 Sent: {json.dumps(message)}")
             except Exception as e:
-                _LOGGER.error(f"⚠️ Send message failed: {e}")
+                log(f"⚠️ Send message failed: {e}", type="error")
 
     async def process_message(self, message):
         """Xử lý tin nhắn nhận được từ WebSocket."""
@@ -85,7 +84,7 @@ class WebSocketClient:
             data = np.frombuffer(message, dtype=np.uint8)
             header = np.frombuffer(data[:12], dtype=np.uint32)
             L, F, code = header[0], header[1], header[2]
-            _LOGGER.info(f"📡 Received header: L={L}, F={F}, code={code}")
+            log(f"📡 Received header: L={L}, F={F}, code={code}")
 
             if code == 3 and L > 0:
                 if F == 0:
@@ -93,7 +92,7 @@ class WebSocketClient:
                     name = f"/config/www/{int(datetime.now().timestamp() * 1000)}.jpg"
                     async with aiofiles.open(name, 'wb') as f:
                         await f.write(image_part.tobytes())
-                    _LOGGER.info(f"📷 Saved image: {name}")
+                    log(f"📷 Saved image: {name}")
                 else:
                     text_part = data[20:20+F].tobytes().decode('utf-8').replace("\x00", "").strip()
                     json_content = json.loads(text_part)
@@ -101,11 +100,11 @@ class WebSocketClient:
                     name = f"/config/www/{int(datetime.now().timestamp() * 1000)}.jpg"
                     async with aiofiles.open(name, 'wb') as f:
                         await f.write(image_part.tobytes())
-                    _LOGGER.info(f"📝 JSON: {json_content}")
+                    log(f"📝 JSON: {json_content}")
                     for callback in self.callbacks:
                         await callback(json_content)
         except Exception as e:
-            _LOGGER.error(f"⚠️ Error processing message: {e}")
+            log(f"⚠️ Error processing message: {e}", type="error")
 
     async def stop(self, shutdown=True):
         """Dừng kết nối WebSocket."""
@@ -117,6 +116,6 @@ class WebSocketClient:
         self.websocket = None
         self.session = None
         if shutdown:
-            _LOGGER.info("WebSocket client stopped")
+            log("WebSocket client stopped")
         else:
-            _LOGGER.info("WebSocket client stopped for reload, will restart")
+            log("WebSocket client stopped for reload, will restart")

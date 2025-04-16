@@ -1,11 +1,11 @@
 import logging
 import asyncio
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.components.persistent_notification import async_create
-from homeassistant.exceptions import ConfigEntryNotReady
 from .websocket_client import WebSocketClient
+from homeassistant.components import webhook
+from .api import set_callback_url, handle_webhook, get_webhook_url, get_local_ip, log
 
-_LOGGER = logging.getLogger(__name__)
+
 DOMAIN = "fire_camera"
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -15,28 +15,46 @@ async def async_setup_entry(hass, entry, async_add_entities):
     password = entry.data.get("password")
     camera_ip = entry.data.get("camera_ip")
     mac_address = entry.data.get("mac_address")
-    
-    _LOGGER.info(f"🔗 Connecting to {camera_name} at {camera_ip}...")
-    
-    # Khởi tạo WebSocketClient duy nhất
-    ws_client = WebSocketClient(hass, user_name, password, camera_ip)
-    
-    # Lưu ws_client vào hass.data để dọn dẹp sau này
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = ws_client
-    
-    # Tạo các cảm biến và đăng ký callback
+    camera_type = entry.data.get("camera_type")
+    token = entry.data.get("token")
+    local_ip = await get_local_ip()
+    log(f"🔗 Connecting to {camera_name} at {camera_ip}...")
+    sensors = {}
+    ws_client = WebSocketClient(hass, user_name, password, camera_ip) if camera_type == "1" else None
+     # Khởi tạo cảm biến
     fire_sensor = FireSmokeSensor(hass, camera_name, ws_client, mac_address, "fire")
     smoke_sensor = FireSmokeSensor(hass, camera_name, ws_client, mac_address, "smoke")
-    
-    # Thêm các cảm biến vào HA
+    sensors["fire"] = fire_sensor
+    sensors["smoke"] = smoke_sensor
+
     async_add_entities([fire_sensor, smoke_sensor], True)
-    
-    # Đăng ký callback từ các cảm biến
-    ws_client.add_callback(fire_sensor.receive_ws_data)
-    ws_client.add_callback(smoke_sensor.receive_ws_data)
-    
-    # Chạy kết nối WebSocket trong một tác vụ bất đồng bộ
-    hass.loop.create_task(ws_client.connect())
+
+    if camera_type == "1":
+        # CAMERA WEBSOCKET
+        log(f"Khởi tạo WebSocket cho camera {camera_name} ({camera_ip}) loại {camera_type}")
+        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = ws_client
+        ws_client.add_callback(fire_sensor.receive_ws_data)
+        ws_client.add_callback(smoke_sensor.receive_ws_data)
+        hass.loop.create_task(ws_client.connect())
+
+    elif camera_type == "2":
+        # CAMERA WEBHOOK
+        log(f"Khởi tạo Webhook cho camera {camera_name} ({camera_ip}) loại {camera_type}")
+        webhook_id = f"firecam_{mac_address.replace(':', '')}"
+        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = sensors
+
+        webhook.async_register(
+            hass,
+            DOMAIN,
+            f"Webhook {camera_name}",
+            webhook_id,
+            handle_webhook
+        )
+
+        # Đăng ký webhook URL lên camera
+        webhook_url = await get_webhook_url(local_ip, webhook_id)
+        await set_callback_url(camera_ip, token, webhook_url)
+        # await hass.async_add_executor_job(set_callback_url, camera_ip, token, webhook_url)
 
 class FireSmokeSensor(BinarySensorEntity):
     """Cảm biến nhị phân để nhận dữ liệu từ WebSocket."""
@@ -61,7 +79,10 @@ class FireSmokeSensor(BinarySensorEntity):
 
     async def receive_ws_data(self, message):
         """Xử lý tin nhắn từ WebSocket Server."""
-        _LOGGER.info(f"Received WebSocket data for {self.event_type}: {message}")
+        if not self.ws_client:
+            log(f"data for {self.event_type} for camara type 2 {message}")
+        else:
+            log(f"data for {self.event_type} for camara type 1 {message}")
         if message.get("event") == self.event_type:
             self._attr_is_on = True
             self.async_write_ha_state()
@@ -80,15 +101,17 @@ class FireSmokeSensor(BinarySensorEntity):
             self._attr_is_on = False
             self.async_write_ha_state()
         except asyncio.CancelledError:
-            _LOGGER.debug(f"Timer for {self._attr_name} was cancelled")
+            log(f"Timer for {self._attr_name} was cancelled")
 
     async def async_will_remove_from_hass(self):
         """Dọn dẹp khi cảm biến bị xóa khỏi HA."""
-        if self._timeout_task:
-            self._timeout_task.cancel()
-        self.ws_client.stop()
-        await super().async_will_remove_from_hass()
+        if self.ws_client:
+            if self._timeout_task:
+                self._timeout_task.cancel()
+            self.ws_client.stop()
+            await super().async_will_remove_from_hass()
 
     def stop_ws(self):
         """Dừng kết nối WebSocket khi HA tắt."""
-        self.ws_client.stop()
+        if self.ws_client:
+            self.ws_client.stop()
