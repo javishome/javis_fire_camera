@@ -6,7 +6,7 @@ from datetime import datetime
 
 # Cấu hình phiên bản cần release
 VERSION = "2024_4_4"
-PYTHON_VERSION = "python12"  # hoặc python13 tùy version
+PYTHON_VERSION = "python_12"  # hoặc python13 tùy version
 ROOT_DIR = os.getcwd()
 BUILD_DIR = os.path.join(ROOT_DIR, "build", VERSION)
 MAIN_CODE_DIR = os.path.join(ROOT_DIR, "main_code", VERSION)
