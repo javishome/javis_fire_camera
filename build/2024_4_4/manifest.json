@@ -1,7 +1,7 @@
 {
     "domain": "fire_camera",
     "name": "Fire Camera",
-    "version": "2024.4.4",
+    "version": "3",
     "dependencies": [],
     "codeowners": [
         "@javisco"
