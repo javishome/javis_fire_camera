@@ -43,6 +43,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
         webhook_id = f"firecam_{mac_address.replace(':', '')}"
         hass.data.setdefault(DOMAIN, {})[entry.entry_id] = sensors
 
+        webhook.async_unregister(hass, webhook_id)
+
         webhook.async_register(
             hass,
             DOMAIN,
