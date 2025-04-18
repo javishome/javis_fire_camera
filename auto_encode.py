@@ -57,8 +57,8 @@ def main():
     current_version = sys.version_info[:2]
     current_version_str = f"{current_version[0]}.{current_version[1]}"
 
-    
-    version = input("Nhập version cần release (phải là 2024_4_4 hoặc 2024_12_4): ")
+    versions_supported = list(map_python_version.keys())
+    version = input(f"Nhập version cần release (phải trong {versions_supported}): ")
     print(f"🔁 Starting release process for version {version}")
     ROOT_DIR = os.getcwd()
     build_dir = os.path.join(ROOT_DIR, "build", version)
