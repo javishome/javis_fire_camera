@@ -4,8 +4,6 @@ import json
 import subprocess
 import sys
 
-# Cấu hình phiên bản cần release
-# VERSION = "2024_4_4"
 
 map_python_version = {
     "2024_4_4": "3.12",
@@ -55,13 +53,6 @@ def check_encoded_files():
         else:
             print(f"❌ Missing encoded file: {file}")
 
-# def git_commit_and_push():
-#     os.chdir(ROOT_DIR)
-#     print("📦 Committing and pushing to Git")
-#     subprocess.run(["git", "add", "."], check=True)
-#     subprocess.run(["git", "commit", "-m", f"Release version {VERSION}"], check=True)
-#     subprocess.run(["git", "push"], check=True)
-
 def main():
     current_version = sys.version_info[:2]
     current_version_str = f"{current_version[0]}.{current_version[1]}"
@@ -71,7 +62,7 @@ def main():
     print(f"🔁 Starting release process for version {version}")
     ROOT_DIR = os.getcwd()
     build_dir = os.path.join(ROOT_DIR, "build", version)
-    main_code_dir = os.path.join(ROOT_DIR, "main_code", version)
+    main_code_dir = os.path.join(ROOT_DIR, "main_code", "2024")
     if version not in map_python_version:
         print("❌ Version không hợp lệ. Chỉ hỗ trợ 2024_4_4 hoặc 2024_12_4.")
         return
@@ -88,8 +79,7 @@ def main():
 
     encode_py_files(build_dir)
     check_encoded_files()
-    # git_commit_and_push()
-    # print("🎉 Release process completed!")
+    print("🎉 Release process completed!")
 
 if __name__ == "__main__":
     main()
