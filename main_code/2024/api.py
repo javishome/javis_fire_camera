@@ -5,10 +5,10 @@ import json
 import asyncio
 import base64
 import socket
+from .const import IS_LOGGING
 _LOGGER = logging.getLogger(__name__)
-
 DOMAIN = "fire_camera"
-IS_LOGGING = False
+
 def log(message, type="info"):
     """Log message."""
     if IS_LOGGING:
