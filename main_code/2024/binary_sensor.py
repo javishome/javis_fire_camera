@@ -110,10 +110,10 @@ class FireSmokeSensor(BinarySensorEntity):
         if self.ws_client:
             if self._timeout_task:
                 self._timeout_task.cancel()
-            self.ws_client.stop()
+            await self.ws_client.stop()
             await super().async_will_remove_from_hass()
 
-    def stop_ws(self):
+    async def stop_ws(self):
         """Dừng kết nối WebSocket khi HA tắt."""
         if self.ws_client:
-            self.ws_client.stop()
+            await self.ws_client.stop()
