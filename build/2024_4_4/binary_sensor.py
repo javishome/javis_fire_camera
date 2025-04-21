@@ -3,10 +3,8 @@ import asyncio
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from .websocket_client import WebSocketClient
 from homeassistant.components import webhook
-from .api import set_callback_url, handle_webhook, get_webhook_url, get_local_ip, log
-
-
-DOMAIN = "fire_camera"
+from .api import set_callback_url, handle_webhook, get_webhook_url, get_local_ip
+from .const import log, DOMAIN
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Thiết lập cảm biến khi Home Assistant khởi động."""

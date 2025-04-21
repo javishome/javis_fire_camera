@@ -5,7 +5,7 @@ import numpy as np
 import json
 from datetime import datetime
 import aiofiles
-from .api import log
+from .const import log, DOMAIN
 
 class WebSocketClient:
     def __init__(self, hass, user_name, password, camera_ip):

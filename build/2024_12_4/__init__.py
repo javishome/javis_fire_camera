@@ -2,12 +2,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 import asyncio
-import logging
-from .api import log
-
-_LOGGER = logging.getLogger(__name__)
+from .const import DOMAIN, log
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR]
-DOMAIN = "fire_camera"
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Thiết lập integration từ config entry."""

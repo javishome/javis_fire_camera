@@ -6,9 +6,8 @@ import homeassistant.helpers.config_validation as cv  # Import thêm để dùng
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 import asyncio
 import aiohttp
-from .api import get_token_1, get_mac_address_1, get_token_2, get_mac_address_2, log
-
-DOMAIN = "fire_camera"
+from .api import get_token_1, get_mac_address_1, get_token_2, get_mac_address_2
+from .const import log, DOMAIN
 
 class WebSocketConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Xử lý cấu hình UI cho WebSocket Component."""

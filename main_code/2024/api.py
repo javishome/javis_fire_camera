@@ -5,21 +5,9 @@ import json
 import asyncio
 import base64
 import socket
-from .const import IS_LOGGING
-_LOGGER = logging.getLogger(__name__)
-DOMAIN = "fire_camera"
+from .const import DOMAIN, log
 
-def log(message, type="info"):
-    """Log message."""
-    if IS_LOGGING:
-        if type == "error":
-            _LOGGER.error(message)
-        elif type == "warning":
-            _LOGGER.warning(message)
-        elif type == "debug":
-            _LOGGER.debug(message)
-        else:
-            log(message)
+
 
 async def get_mac_address_1(camera_ip, token):
     """Lấy địa chỉ MAC từ API của camera."""
@@ -45,7 +33,7 @@ async def get_mac_address_1(camera_ip, token):
                     log(f"✅ MAC Address: {mac_address}")
                     return mac_address
                 else:
-                    _LOGGER.error(f"❌ Failed to get MAC Address. Status Code: {response.status}")
+                    log(f"❌ Failed to get MAC Address. Status Code: {response.status}", type="error")
     except asyncio.TimeoutError:
         log("Yêu cầu đăng nhập vượt quá thời gian chờ.")
         return None
@@ -161,7 +149,7 @@ async def get_mac_address_2(camera_ip, token):
                     log(f"✅ MAC Address: {mac_address}")
                     return mac_address
                 else:
-                    _LOGGER.error(f"❌ Failed to get MAC Address. Status Code: {response.status}")
+                    log(f"❌ Failed to get MAC Address. Status Code: {response.status}", type="error")
     except asyncio.TimeoutError:
         log("Yêu cầu vượt quá thời gian chờ.")
     except aiohttp.ClientError as e:
@@ -170,11 +158,6 @@ async def get_mac_address_2(camera_ip, token):
         log(f"Lỗi không xác định: {e}")
 
     return None
-
-# async def get_mac_device():
-#     mac = uuid.UUID(int=uuid.getnode()).hex[-12:]
-#     mac_dec = int(mac, 16)
-#     return mac_dec
 
 async def get_local_ip() -> str:
     """Lấy địa chỉ IP thật gắn với mạng LAN của host (không phải IP Docker)."""
@@ -185,7 +168,7 @@ async def get_local_ip() -> str:
         s.close()
         return ip
     except Exception as e:
-        _LOGGER.warning("⚠️ Không thể lấy IP từ socket: %s", e)
+        log(f"❌ Không thể lấy địa chỉ IP: {e}", type="warning")
         return "127.0.0.1"
 
 async def get_webhook_url(local_ip, webhook_id):
@@ -222,7 +205,7 @@ async def set_callback_url(camera_ip, token, call_back_url):
                     log(f"✅ Đăng ký URL thành công: {call_back_url}")
                     return True
                 else:
-                    _LOGGER.error(f"❌ Failed to get MAC Address. Status Code: {response.status}")
+                    log(f"❌ Đăng ký URL thất bại. Mã lỗi: {response.status}", type="error")
     except asyncio.TimeoutError:
         log("Yêu cầu vượt quá thời gian chờ.")
     except aiohttp.ClientError as e:
@@ -246,8 +229,6 @@ async def handle_webhook(hass, webhook_id, request):
                 if sensor:
                     await sensor.receive_ws_data({"event": label})
                     return
-
-        _LOGGER.warning(f"⚠️ No matching sensor for webhook: {webhook_id}")
-
+        log(f"❌ Không tìm thấy cảm biến cho webhook: {webhook_id}", type="warning")
     except Exception as e:
-        _LOGGER.error(f"❌ Error in webhook handler: {e}")
+        log(f"❌ Lỗi trong xử lý webhook: {e}", type="error")
