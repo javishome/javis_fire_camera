@@ -48,7 +48,7 @@ class WebSocketClient:
                                 log("WebSocket connection closed or error occurred")
                                 break
                         except asyncio.TimeoutError:
-                            log("No message received within 30 seconds, continuing...", type="warning")
+                            # log("No message received within 30 seconds, continuing...", type="warning")
                             continue
                         except Exception as e:
                             log(f"Error receiving WebSocket message: {e}", type="error")
