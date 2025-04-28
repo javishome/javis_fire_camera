@@ -9,18 +9,18 @@
       "no_token": "Không thể lấy token từ máy chủ. Vui lòng kiểm tra kết nối mạng của bạn hoặc cấu hình máy chủ.",
       "url_error": "URL không hợp lệ. Vui lòng kiểm tra lại.",
       "name_exists": "Tên camera đã tồn tại. Vui lòng chọn tên khác.",
-      "mac_exists": "Thiết bị đã tồn tại."
+      "mac_exists": "Đã tồn tại thiết bị với địa chỉ MAC này."
     },
     "step": {
       "user": {
-        "title": "Fire Sensor",
-        "description": "Enter your WebSocket Server information.",
+        "title": "Javis Fire Camera",
+        "description": "Nhập thông tin kết nối camera",
         "data": {
-          "camera_name": "Camera Name",
-          "user_name": "User Name",
-          "password": "Password",
-          "camera_ip": "Camera IP Address",
-          "camera_type": "Camera Type"
+          "camera_name": "Tên camera",
+          "user_name": "Tài khoản admin",
+          "password": "Mật khẩu admin",
+          "camera_ip": "Địa chỉ IP camera",
+          "camera_type": "Chọn loại camera"
         }
       }
     }
