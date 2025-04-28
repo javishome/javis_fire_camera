@@ -4,21 +4,29 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from .websocket_client import WebSocketClient
 from homeassistant.components import webhook
 from .api import set_callback_url, handle_webhook, get_webhook_url, get_local_ip
-from .const import log, DOMAIN
+from .const import log, DOMAIN, CAMERA_TYPES_DISPLAY
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Thiết lập cảm biến khi Home Assistant khởi động."""
-    camera_name = entry.data.get("camera_name")
-    user_name = entry.data.get("user_name")
-    password = entry.data.get("password")
-    camera_ip = entry.data.get("camera_ip")
-    mac_address = entry.data.get("mac_address")
-    camera_type = entry.data.get("camera_type")
-    token = entry.data.get("token")
+    # camera_name = entry.data.get("camera_name")
+    # user_name = entry.data.get("user_name")
+    # password = entry.data.get("password")
+    # camera_ip = entry.data.get("camera_ip")
+    # mac_address = entry.data.get("mac_address")
+    # camera_type = entry.data.get("camera_type")
+    # token = entry.data.get("token")
+    camera_name = entry.options.get("camera_name", entry.data.get("camera_name"))
+    user_name = entry.options.get("user_name", entry.data.get("user_name"))
+    password = entry.options.get("password", entry.data.get("password"))
+    camera_ip = entry.options.get("camera_ip", entry.data.get("camera_ip"))
+    mac_address = entry.options.get("mac_address", entry.data.get("mac_address"))
+    camera_type = entry.options.get("camera_type", entry.data.get("camera_type"))
+    token = entry.options.get("token", entry.data.get("token"))
+
     local_ip = await get_local_ip()
     log(f"🔗 Connecting to {camera_name} at {camera_ip}...")
     sensors = {}
-    ws_client = WebSocketClient(hass, user_name, password, camera_ip) if camera_type == "1" else None
+    ws_client = WebSocketClient(hass, user_name, password, camera_ip) if camera_type == list(CAMERA_TYPES_DISPLAY.keys())[0] else None
      # Khởi tạo cảm biến
     fire_sensor = FireSmokeSensor(hass, camera_name, ws_client, mac_address, "fire")
     smoke_sensor = FireSmokeSensor(hass, camera_name, ws_client, mac_address, "smoke")
@@ -27,7 +35,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities([fire_sensor, smoke_sensor], True)
 
-    if camera_type == "1":
+    if camera_type == list(CAMERA_TYPES_DISPLAY.keys())[0]:
         # CAMERA WEBSOCKET
         log(f"Khởi tạo WebSocket cho camera {camera_name} ({camera_ip}) loại {camera_type}")
         hass.data.setdefault(DOMAIN, {})[entry.entry_id] = ws_client
@@ -35,7 +43,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         ws_client.add_callback(smoke_sensor.receive_ws_data)
         hass.loop.create_task(ws_client.connect())
 
-    elif camera_type == "2":
+    elif camera_type == list(CAMERA_TYPES_DISPLAY.keys())[1]:
         # CAMERA WEBHOOK
         log(f"Khởi tạo Webhook cho camera {camera_name} ({camera_ip}) loại {camera_type}")
         webhook_id = f"firecam_{mac_address.replace(':', '')}"

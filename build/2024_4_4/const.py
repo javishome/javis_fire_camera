@@ -2,6 +2,13 @@
 import logging
 DOMAIN = "fire_camera"
 IS_LOGGING = True
+
+CAMERA_TYPES_DISPLAY = {
+    "1": "Camera TS (web socket)",
+    "2": "Camera BV (HTTP push)",
+}
+
+
 _LOGGER = logging.getLogger(__name__)
 
 
