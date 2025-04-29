@@ -117,15 +117,18 @@ async def get_token_2(user: str, password: str, camera_ip: str) -> dict:
                         else:
                             return {"error": "no_token"}
                     except Exception as e:
-                        return {"error": f"json_parse_error: {str(e)}"}
+                        log(f"Error: {e}", type="error")
+                        return {"error": "login_failed"}
                 else:
-                    return {"error": "Login failed", "status": response.status}
+                    return {"error": "login_failed"}
         except asyncio.TimeoutError:
             return {"error": "timeout"}
         except aiohttp.ClientError as e:
-            return {"error": f"url_error: {str(e)}"}
+            log(f"Error: {e}", type="error")
+            return {"error": "url_error"}
         except Exception as e:
-            return {"error": f"unknown: {str(e)}"}
+            log(f"Error: {e}", type="error")
+            return {"error": "unknown"}
         
 async def get_mac_address_2(camera_ip, token):
     url = f"http://{camera_ip}/api/network/config"
@@ -223,9 +226,13 @@ async def handle_webhook(hass, webhook_id, request):
         log(f"📩 Webhook received: {label}")
 
         # Tìm cảm biến theo entry_id
-        for entry_id, sensor_group in hass.data[DOMAIN].items():
-            if isinstance(sensor_group, dict):
-                sensor = sensor_group.get(label)
+
+        for entry_id, sensor_dict in hass.data[DOMAIN].items():
+            if isinstance(sensor_dict, dict):
+                sensors = sensor_dict.get("sensors")
+                if not sensors:
+                    continue
+                sensor = sensors.get(label)
                 if sensor:
                     await sensor.receive_ws_data({"event": label})
                     return

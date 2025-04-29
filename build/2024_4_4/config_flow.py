@@ -126,17 +126,23 @@ class WebSocketOptionsFlow(config_entries.OptionsFlow):
                     if token_data.get("token"):
                         token = token_data["token"]
                         mac_address = await get_mac_address_1(new_camera_ip, token)
-                        user_input["mac_address"] = mac_address
+                        if mac_address: 
+                            user_input["mac_address"] = mac_address
+                        else:
+                            errors["base"] = "cannot_get_mac"
                     else:
-                        errors["base"] = "cannot_get_mac"
+                        errors["base"] = token_data.get("error", "unknow")
                 elif new_camera_type == list(CAMERA_TYPES_DISPLAY.keys())[1]:
                     token_data = await get_token_2(new_username, new_password, new_camera_ip)
                     if token_data.get("token"):
                         token = token_data["token"]
                         mac_address = await get_mac_address_2(new_camera_ip, token)
-                        user_input["mac_address"] = mac_address
+                        if mac_address: 
+                            user_input["mac_address"] = mac_address
+                        else:
+                            errors["base"] = "cannot_get_mac"
                     else:
-                        errors["base"] = "cannot_get_mac"
+                        errors["base"] = token_data.get("error", "unknow")
             except Exception as e:
                 log(f"⚠️ Error during MAC checking: {e}", type="error")
                 errors["base"] = "cannot_connect"

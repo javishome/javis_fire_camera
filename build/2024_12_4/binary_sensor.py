@@ -38,7 +38,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
     if camera_type == list(CAMERA_TYPES_DISPLAY.keys())[0]:
         # CAMERA WEBSOCKET
         log(f"Khởi tạo WebSocket cho camera {camera_name} ({camera_ip}) loại {camera_type}")
-        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = ws_client
+        if not hass.data.setdefault(DOMAIN, {}).get(entry.entry_id):
+            hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {}
+        hass.data.setdefault(DOMAIN, {})[entry.entry_id]["ws_client"] = ws_client
         ws_client.add_callback(fire_sensor.receive_ws_data)
         ws_client.add_callback(smoke_sensor.receive_ws_data)
         hass.loop.create_task(ws_client.connect())
@@ -47,7 +49,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
         # CAMERA WEBHOOK
         log(f"Khởi tạo Webhook cho camera {camera_name} ({camera_ip}) loại {camera_type}")
         webhook_id = f"firecam_{mac_address.replace(':', '')}"
-        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = sensors
+        if not hass.data.setdefault(DOMAIN, {}).get(entry.entry_id):
+            hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {}
+        hass.data.setdefault(DOMAIN, {})[entry.entry_id]["sensors"] = sensors
 
         webhook.async_unregister(hass, webhook_id)
 
